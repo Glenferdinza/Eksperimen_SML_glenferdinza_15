@@ -1,0 +1,45 @@
+# GitHub Actions: Automated Data Collection via Ping
+# Berjalan setiap 15 menit untuk mengumpulkan data latency real
+# Repo: Eksperimen_SML_glenferdinza_15
+
+name: Data Collection Pipeline
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'   # Setiap 15 menit
+  workflow_dispatch:          # Manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  collect-data:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Collect ping data
+        run: python data_collector.py
+
+      - name: Show latest data
+        run: |
+          echo "=== Last 5 rows ==="
+          tail -5 latency_raw.csv
+          echo ""
+          echo "Total rows:"
+          wc -l latency_raw.csv
+
+      - name: Commit and push data
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          git add latency_raw.csv
+          git diff --staged --quiet || git commit -m "Data: auto-collect $(date +'%Y-%m-%d %H:%M') [skip ci]"
+          git push

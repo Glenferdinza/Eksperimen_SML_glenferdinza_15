@@ -1,0 +1,51 @@
+# GitHub Actions Workflow untuk Kriteria 1 (Advanced)
+# Menjalankan preprocessing otomatis setiap kali ada push atau manual trigger.
+# Repo: Eksperimen_SML_glenferdinza_15
+
+name: Automated Preprocessing Pipeline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'latency_raw.csv'
+      - 'automate_glenferdinza_15.py'
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  preprocessing:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.7'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas numpy scikit-learn
+
+      - name: Run automated preprocessing
+        run: |
+          python automate_glenferdinza_15.py latency_raw.csv preprocessing/latency_preprocessing.csv
+
+      - name: Verify output
+        run: |
+          echo "=== Preprocessing Output ==="
+          head -5 preprocessing/latency_preprocessing.csv
+          echo ""
+          echo "Total rows:"
+          wc -l preprocessing/latency_preprocessing.csv
+
+      - name: Commit and push preprocessed data
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          git add preprocessing/latency_preprocessing.csv
+          git diff --staged --quiet || git commit -m "Auto: Update preprocessed dataset [skip ci]"
+          git push
