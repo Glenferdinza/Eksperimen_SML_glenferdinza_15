@@ -247,9 +247,15 @@ def export_preprocessed(df: pd.DataFrame, output_path: str) -> str:
     
     os.makedirs(os.path.dirname(output_path) if os.path.dirname(output_path) else ".", 
                 exist_ok=True)
-    df.to_csv(output_path, index=False)
+    
+    # Drop kolom mentah yang tidak dibutuhkan untuk training
+    drop_cols = ["timestamp", "server"]
+    df_export = df.drop(columns=[c for c in drop_cols if c in df.columns])
+    
+    df_export.to_csv(output_path, index=False)
     print(f"Preprocessed data saved to: {output_path}")
-    print(f"Shape: {df.shape}")
+    print(f"Shape: {df_export.shape}")
+    print(f"Columns: {list(df_export.columns)}")
     
     return output_path
 
