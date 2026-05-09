@@ -1,8 +1,8 @@
-# GitHub Actions: Automated Data Collection via Ping
-# Berjalan setiap 15 menit untuk mengumpulkan data latency real
+# GitHub Actions: Data Collection + Preprocessing (Combined)
+# Mengumpulkan data ping + langsung preprocess
 # Repo: Eksperimen_SML_glenferdinza_15
 
-name: Data Collection Pipeline
+name: Data Collection & Preprocessing
 
 on:
   schedule:
@@ -13,7 +13,7 @@ permissions:
   contents: write
 
 jobs:
-  collect-data:
+  collect-and-preprocess:
     runs-on: ubuntu-latest
 
     steps:
@@ -25,21 +25,29 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas numpy scikit-learn
+
       - name: Collect ping data
         run: python data_collector.py
 
-      - name: Show latest data
+      - name: Run preprocessing
         run: |
-          echo "=== Last 5 rows ==="
-          tail -5 latency_raw.csv
-          echo ""
-          echo "Total rows:"
-          wc -l latency_raw.csv
+          python automate_glenferdinza_15.py latency_raw.csv preprocessing/latency_preprocessing.csv
 
-      - name: Commit and push data
+      - name: Show results
+        run: |
+          echo "=== Raw data rows ==="
+          wc -l latency_raw.csv
+          echo "=== Preprocessed data rows ==="
+          wc -l preprocessing/latency_preprocessing.csv
+
+      - name: Commit and push
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
-          git add latency_raw.csv
-          git diff --staged --quiet || git commit -m "Data: auto-collect $(date +'%Y-%m-%d %H:%M') [skip ci]"
+          git add latency_raw.csv preprocessing/latency_preprocessing.csv
+          git diff --staged --quiet || git commit -m "Auto: data collection + preprocessing $(date +'%Y-%m-%d %H:%M') [skip ci]"
           git push
